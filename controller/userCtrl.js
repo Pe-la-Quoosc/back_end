@@ -1,4 +1,6 @@
 const { generateToken } = require("../config/jwtToken");
+const Product = require("../models/productModel");
+const Cart = require("../models/cartModel");
 const User = require("../models/userModel");
 const asyncHandler = require("express-async-handler");
 const validateMongoDbId = require("../utils/validateMongodbId");
@@ -255,6 +257,54 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
+const userCart = asyncHandler(async (req, res) => {
+  const { cart } = req.body;
+  const { _id } = req.user;
+  validateMongoDbId(_id);
+  try {
+    let products = [];
+    const userCart = await User.findById(_id);
+    const alreadyExists = await Cart.findOne({ orderBy: _id });
+    //Nếu đã có giỏ hàng thì xóa giỏ hàng cũ
+    if (alreadyExists) {
+      await alreadyExists.deleteOne();
+    }
+    //Duyệt qua từng sản phẩm trong giỏ hàng
+    for (let i = 0; i < cart.length; i++) {
+        let object = {};
+        object.product = cart[i]._id;
+        object.quantity = cart[i].quantity;
+        let getPrice = await Product.findById(cart[i]._id).select("price").exec();
+        object.price = getPrice.price;
+        products.push(object); 
+    }
+    let cartTotal = 0;
+    //Tính tổng giá trị giỏ hàng
+    for (let i = 0; i < products.length; i++) {
+      cartTotal += products[i].price * products[i].quantity;
+    }
+    let newCart = await Cart.create({
+      product: products,
+      CartTotal: cartTotal,
+      orderBy: userCart?._id,
+    });
+    res.json(newCart);
+  } catch (error) {
+    throw new Error(error);
+  } 
+});
+
+const getUserCart = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  validateMongoDbId(_id);
+  try {
+    const cart = await Cart.findOne({ orderBy: _id });
+    res.json(cart);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
 module.exports = {
   createUser,
   loginUserCtrl,
@@ -269,4 +319,6 @@ module.exports = {
   updatePassword,
   forgotPasswordToken,
   resetPassword,
+  userCart,
+  getUserCart,
 };
