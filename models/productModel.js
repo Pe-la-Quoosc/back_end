@@ -1,4 +1,5 @@
 const mongoose = require('mongoose'); // Erase if already required
+const { post } = require('../routes/authRoute');
 
 // Declare the Schema of the Mongo model
 var productSchema = new mongoose.Schema({
@@ -35,6 +36,22 @@ var productSchema = new mongoose.Schema({
     },
     images:{
         type:Array,
+    },
+    color:{
+        type:String,
+        required:true,
+    },
+    ratings: [
+        {
+        star:Number,
+        posts:{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
+    },],
+    totalrating:{
+        type:String,
+        default:0,
     },
 },{ timestamps: true });
 
