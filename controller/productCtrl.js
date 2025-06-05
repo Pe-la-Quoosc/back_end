@@ -97,7 +97,7 @@ const getAllProducts = asyncHandler(async (req, res) => {
 
 const rating = asyncHandler(async (req, res) => {
   const {_id}= req.user;
-  const {star,prodID}= req.body;
+  const {star,prodID, comment}= req.body;
   try {
      const product = await Product.findById(prodID);
   let alreadyRated = product.ratings.find(
@@ -109,7 +109,7 @@ const rating = asyncHandler(async (req, res) => {
         ratings: { $elemMatch: alreadyRated },
       },
       {
-        $set: { "ratings.$.star": star },
+        $set: { "ratings.$.star": star, "ratings.$.comment": comment },
       },
       { new: true }
     );
@@ -119,7 +119,8 @@ const rating = asyncHandler(async (req, res) => {
       {
         $push: { 
           ratings: { 
-            star: star, 
+            star: star,
+            comment: comment,
             postedBy: _id,
           } 
         },
