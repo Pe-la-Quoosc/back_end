@@ -1,17 +1,40 @@
 const Product = require("../models/productModel");
 const asyncHandler = require("express-async-handler");
+const Category = require("../models/categoryModel");
 const slugify = require("slugify");
 const qs = require("qs");
 // Create product
 const createProduct = asyncHandler(async (req, res) => {
+  const { title, description, price, category, variants, images } = req.body;
+
   try {
-    if (req.body.title) {
-      req.body.slug = slugify(req.body.title);
+    // Kiểm tra danh mục có tồn tại không
+    const categoryData = await Category.findById(category);
+    if (!categoryData) {
+      return res.status(400).json({ message: "Invalid category" });
     }
-    const newProduct = await Product.create(req.body);
-    res.json(newProduct);
+
+     // Tính tổng quantity từ variants
+    const totalQuantity = variants.reduce((acc, variant) => acc + (variant.quantity || 0), 0);
+
+    // Tạo slug từ tiêu đề sản phẩm
+    const slug = slugify(title, { lower: true });
+
+    // Tạo sản phẩm mới
+    const newProduct = await Product.create({
+      title,
+      slug,
+      description,
+      price,
+      category,
+      quantity: totalQuantity,
+      variants,
+      images,
+    });
+
+    res.status(201).json(newProduct);
   } catch (error) {
-    throw new Error(error);
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -39,14 +62,10 @@ const deleteProduct = asyncHandler(async (req, res) => {
   }
 });
 
-
 //get a product
 const getaProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
-
-    
-
     const product = await Product.findById(id);
       res.json(product);
   } catch (error) {
@@ -97,7 +116,7 @@ const getAllProducts = asyncHandler(async (req, res) => {
 
 const rating = asyncHandler(async (req, res) => {
   const {_id}= req.user;
-  const {star,prodID}= req.body;
+  const {star,prodID, comment}= req.body;
   try {
      const product = await Product.findById(prodID);
   let alreadyRated = product.ratings.find(
@@ -109,7 +128,7 @@ const rating = asyncHandler(async (req, res) => {
         ratings: { $elemMatch: alreadyRated },
       },
       {
-        $set: { "ratings.$.star": star },
+        $set: { "ratings.$.star": star, "ratings.$.comment": comment },
       },
       { new: true }
     );
@@ -119,7 +138,8 @@ const rating = asyncHandler(async (req, res) => {
       {
         $push: { 
           ratings: { 
-            star: star, 
+            star: star,
+            comment: comment,
             postedBy: _id,
           } 
         },

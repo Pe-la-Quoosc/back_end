@@ -34,7 +34,13 @@ var userSchema = new mongoose.Schema(
       default: [],
     },
     address: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
-    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+    gender: {
+      type: String,
+      default: "other",
+    },
+    avatar: {
+      type: String,
+    },
     refreshToken: {
       type: String,
     },
