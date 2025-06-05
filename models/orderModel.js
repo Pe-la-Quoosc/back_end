@@ -13,9 +13,9 @@ var orderSchema = new mongoose.Schema({
     ],
     paymentIntend: {},
     orderStatus: {
-        typeof: String,
+        type: String,
         default: 'Not Processed',
-        enum: ['Not Processed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+        enum: ['Not Processed', 'Processing', 'Cash on Delivery', 'Shipped', 'Delivered', 'Cancelled'],
     },
     orderBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -25,4 +25,4 @@ var orderSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const Order = mongoose.model('Order', orderSchema);
+module.exports = mongoose.model('Order', orderSchema);
