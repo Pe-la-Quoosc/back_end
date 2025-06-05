@@ -54,6 +54,40 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
     throw new Error("Invalid credentials");
   }
 });
+
+//Admin login
+const loginAdmin = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const findAdmin = await User.findOne({ email });
+  if (findAmind.role !== "admin") {
+    throw new Error("Not authorized, you are not an admin");
+  }
+  if (findAdmin && findAdmin.isPasswordMatched(password)) {
+    const refreshToken = await generateRefreshToken(findAdmin?.id);
+    const updateUser = await User.findByIdAndUpdate(
+      findAdmin.id,
+      {
+        refreshToken: refreshToken,
+      },
+      {
+        new: true,
+      }
+    );
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 72 * 60 * 60 * 1000,
+    });
+    res.json({
+      _id: findAdmin?._id,
+      firstname: findAdmin?.firstname,
+      email: findAdmin?.email,
+      mobile: findAdmin?.mobile,
+      token: generateToken(findAdmin?._id), // Assuming generateToken is imported from jwtToken.js
+    });
+  } else {
+    throw new Error("Invalid credentials");
+  }
+});
 //Get all users
 const getallUser = asyncHandler(async (req, res) => {
   try {
@@ -321,4 +355,5 @@ module.exports = {
   resetPassword,
   userCart,
   getUserCart,
+  loginAdmin,
 };
