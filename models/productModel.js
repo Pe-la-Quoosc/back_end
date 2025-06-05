@@ -1,7 +1,7 @@
 const mongoose = require('mongoose'); // Erase if already required
-const { post } = require('../routes/authRoute');
 
 // Declare the Schema of the Mongo model
+const variantSchema = new mongoose.Schema({},{strict: false});
 var productSchema = new mongoose.Schema({
     title:{
         type:String,
@@ -10,36 +10,33 @@ var productSchema = new mongoose.Schema({
     slug:{
         type:String,
         required:true,
-        unique:true,
         lowercase:true,
     },
     description:{
         type:String,
         required:true,
-        unique:true,
     },
     price:{
         type:Number,
         required:true,
     },
     category:{
-        type:String,
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Category',
         required:true,
     },
-    quantity:{ type:Number, required:true,
-        select: false,
-    },
+    quantity:{ type:Number, required:true },
     sold:{
         type:Number,
         default:0,
-        select: false,
     },
     images:{
-        type:Array,
-    },
-    color:{
-        type:String,
+        type:[String],
         required:true,
+    },
+    variants:{
+       type: [variantSchema],
+       default: [],
     },
     ratings: [
         {
