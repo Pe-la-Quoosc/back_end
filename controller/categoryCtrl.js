@@ -44,4 +44,20 @@ const getCategoryById = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { createCategory, getAllCategories, deleteCategory, getCategoryById };
+// Update a category
+const updateCategory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, validVariants } = req.body;
+  try {
+    const updatedCategory = await Category.findByIdAndUpdate(
+      id,
+      { name, validVariants },
+      { new: true }
+    );
+    res.json(updatedCategory);
+  } catch (error) {
+      throw new Error(error);
+  }
+});
+
+module.exports = { createCategory, getAllCategories, deleteCategory, getCategoryById, updateCategory };

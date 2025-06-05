@@ -1,7 +1,6 @@
 const mongoose = require('mongoose'); // Erase if already required
 
 
-// Declare the Schema of the Mongo model
 const variantSchema = new mongoose.Schema({},{strict: false});
 var productSchema = new mongoose.Schema({
     title:{
