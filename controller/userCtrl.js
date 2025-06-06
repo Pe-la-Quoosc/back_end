@@ -353,7 +353,6 @@ const getUserCart = asyncHandler(async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 const emptyCart = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   validateMongoDbId(_id);
@@ -463,9 +462,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
-=======
 
->>>>>>> ffb8518 (updet)
 module.exports = {
   createUser,
   loginUserCtrl,
