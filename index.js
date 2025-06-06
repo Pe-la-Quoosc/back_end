@@ -1,5 +1,6 @@
 const bodyParser = require('body-parser');
 const express=require('express');
+const cors = require("cors");
 const dbConnect = require('./config/dbConnect');
 const app=express();
 const dotenv=require('dotenv').config();
@@ -14,6 +15,12 @@ const { notFound, errorHandler } = require('./middlewares/errorHandler');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 dbConnect();
+app.use(cors({
+  origin: "http://localhost:3000", // Cho phép frontend truy cập
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], // Các phương thức được phép
+  credentials: true, // Nếu cần gửi cookie hoặc thông tin xác thực
+}));
+
 app.use(morgan("dev")); 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));

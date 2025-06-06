@@ -3,10 +3,15 @@ const bcrypt = require("bcrypt"); // For password hashing
 const crypto = require("crypto"); // For generating secure tokens
 // Declare the Schema of the Mongo model
 var userSchema = new mongoose.Schema(
-  {
-    firstname: {
+  { 
+    username:{
+      type:String,
+      required:true,
+      unique:true,
+    },
+    fullname: {
       type: String,
-      required: true,
+      default:null,
     },
     email: {
       type: String,
@@ -15,7 +20,7 @@ var userSchema = new mongoose.Schema(
     },
     mobile: {
       type: String,
-      required: true,
+      default:null,
     },
     password: {
       type: String,

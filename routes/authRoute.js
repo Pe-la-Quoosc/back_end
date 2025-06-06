@@ -33,6 +33,7 @@ router.get("/cart", authMiddleware, getUserCart);
 router.delete("/cart", authMiddleware, emptyCart);
 
 router.put("/password", authMiddleware, updatePassword);
+
 router.post("/login", loginUserCtrl);
 router.post("/admin-login", loginAdmin);
 router.get("/all-users", getallUser);
@@ -50,4 +51,5 @@ router.post("/cart/apply-coupon", authMiddleware, userCoupon);
 router.post("/cart/cash-order", authMiddleware, createOrder);
 router.get("/order", authMiddleware, getOrder);
 router.put("/order/update-order/:id", authMiddleware, isAdmin, updateOrderStatus);
+
 module.exports=router;

@@ -30,6 +30,10 @@ var productSchema = new mongoose.Schema({
         type:Number,
         default:0,
     },
+    discountPercentage:{
+        type:Number,
+        default:0,
+    },
     images:{
         type:[String],
         required:true,
@@ -38,15 +42,44 @@ var productSchema = new mongoose.Schema({
        type: [variantSchema],
        default: [],
     },
-    ratings: [
+    review: {
+      type: [
         {
-        star:Number,
-        comment: String,
-        postby :{
+          user: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
+            ref: 'User',
+          },
+          comment: {
+            type: String,
+            required: true,
+          },
+          rating: {
+            type: Number,
+            required: true,
+            min: 1,
+            max: 5,
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
         },
-    },],
+      ],
+      default: null, // Đặt giá trị mặc định là null
+    },
+    ratings: {
+      type: [
+        {
+          star: Number,
+          comment: String,
+          postby: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+          },
+        },
+      ],
+      default: null, // Đặt giá trị mặc định là null
+    },
     totalrating:{
         type:String,
         default:0,
