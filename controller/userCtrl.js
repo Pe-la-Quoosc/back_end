@@ -453,6 +453,20 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
+const createAddress = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { province, district, ward, street } = req.body;
+  validateMongoDbId(_id);
+  try {
+    const user = await User.findById(_id);
+    user.address = { province, district, ward, street };
+    await user.save();
+    res.json(user.address);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
 module.exports = {
   createUser,
   loginUserCtrl,
@@ -475,4 +489,5 @@ module.exports = {
   createOrder,
   getOrder,
   updateOrderStatus,
+  createAddress,
 };

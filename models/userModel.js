@@ -33,7 +33,23 @@ var userSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
-    address: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
+    address: {
+      province: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Address",
+      },
+      district: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Address",
+      },
+      ward: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Address",
+      },
+      street: {
+        type: String,
+      },
+    },
     gender: {
       type: String,
       default: "other",

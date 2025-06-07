@@ -21,6 +21,7 @@ const {
     createOrder,
     getOrder,
     updateOrderStatus,
+    createAddress,
 } = require('../controller/userCtrl');
 const { authMiddleware, isAdmin } = require('../middlewares/authMiddleware');
 const router=express.Router();
@@ -50,4 +51,6 @@ router.post("/cart/apply-coupon", authMiddleware, userCoupon);
 router.post("/cart/cash-order", authMiddleware, createOrder);
 router.get("/order", authMiddleware, getOrder);
 router.put("/order/update-order/:id", authMiddleware, isAdmin, updateOrderStatus);
+router.post("/address", authMiddleware, createAddress);
+
 module.exports=router;
