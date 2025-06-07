@@ -15,23 +15,31 @@ const { sendEmail } = require("./emailCtrl");
 const { cursorTo } = require("readline");
 //Create user
 const createUser = asyncHandler(async (req, res) => {
-  const email = req.body.email;
-  const findUser = await User.findOne({ email: email });
-  if (!findUser) {
-    const newUser = await User.create(req.body);
-    await newUser.save();
-    res.json(newUser);
-  } else {
-    throw new Error("User already exists");
+  const { username, email, password } = req.body;
+  const findUserByEmail = await User.findOne({ email });
+  const findUserByUsername = await User.findOne({ username });
+  if (findUserByEmail) {
+    throw new Error("Email already exists");
   }
+
+  if (findUserByUsername) {
+    throw new Error("Username already exists");
+  }
+
+  const newUser = await User.create({
+    username,
+    email,
+    password,
+  });
+  await newUser.save();
+  res.json(newUser);
 });
 //Login user
 const loginUserCtrl = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  // console.log(email, password);
-  const findUser = await User.findOne({ email });
-//   console.log("User found:", findUser);
-  // console.log(await findUser.isPasswordMatched(password));
+  const { username, password } = req.body;
+   console.log("Email:", username, "Password:", password);
+  const findUser = await User.findOne({ username });
+   console.log("User found:", findUser);
   if (findUser && findUser.isPasswordMatched(password)) {
     const refreshToken = await generateRefreshToken(findUser?.id);
     const updateUser = await User.findByIdAndUpdate(
@@ -49,7 +57,8 @@ const loginUserCtrl = asyncHandler(async (req, res) => {
     });
     res.json({
       _id: findUser?._id,
-      firstname: findUser?.firstname,
+      fullname: findUser?.fullname,
+      username: findUser?.username,
       email: findUser?.email,
       mobile: findUser?.mobile,
       token: generateToken(findUser?._id), // Assuming generateToken is imported from jwtToken.js
@@ -159,7 +168,7 @@ const updateaUser = asyncHandler(async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       _id,
       {
-        firstname: req?.body?.firstname,
+        fullname: req?.body?.fullname,
         email: req?.body?.email,
         mobile: req?.body?.mobile,
         password: req?.body?.password,
@@ -221,32 +230,32 @@ const unblockUser = asyncHandler(async (req, res) => {
 //logout user
 const logoutUser = asyncHandler(async (req, res) => {
   const cookie = req.cookies;
-  if(!cookie?.refreshToken) {
+  if (!cookie?.refreshToken) {
     throw new Error("No refresh token in cookies");
   }
-    const refreshToken = cookie.refreshToken;
-    const user = await User.findOne({ refreshToken });
-    if(!user) {
-      res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: true,
-      });
-      return res.sendStatus(204);
-    }
-    await User.findOneAndUpdate(refreshToken, {
-      refreshToken: "",
-    });
+  const refreshToken = cookie.refreshToken;
+  const user = await User.findOne({ refreshToken });
+  if (!user) {
     res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: true,
-      });
-      return res.sendStatus(204);
+      httpOnly: true,
+      secure: true,
+    });
+    return res.sendStatus(204);
+  }
+  await User.findOneAndUpdate(refreshToken, {
+    refreshToken: "",
+  });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+  });
+  return res.sendStatus(204);
 });
 
 //Update password
-const updatePassword = asyncHandler(async(req, res) => {
-  const {_id} = req.user;
-  const {password} = req.body;
+const updatePassword = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { password } = req.body;
   validateMongoDbId(_id);
   const user = await User.findById(_id);
   if (password) {
@@ -262,7 +271,7 @@ const forgotPasswordToken = asyncHandler(async (req, res) => {
   const { email } = req.body;
   const user = await User.findOne({ email });
   if (!user) throw new Error("User not found with this email");
-  try{
+  try {
     const token = await user.createPasswordResetToken();
     await user.save();
     const resetUrl = `Hi, please follow this link to reset your password. This link is valid for 10 minutes. <a href='http://localhost:3002/api/user/reset-password/${token}'>Click here</a>`;
@@ -274,7 +283,7 @@ const forgotPasswordToken = asyncHandler(async (req, res) => {
     };
     sendEmail(data);
     res.json(token);
-  }catch (error) {
+  } catch (error) {
     throw new Error(error);
   }
 });
@@ -309,12 +318,12 @@ const userCart = asyncHandler(async (req, res) => {
     }
     //Duyệt qua từng sản phẩm trong giỏ hàng
     for (let i = 0; i < cart.length; i++) {
-        let object = {};
-        object.product = cart[i]._id;
-        object.quantity = cart[i].quantity;
-        let getPrice = await Product.findById(cart[i]._id).select("price").exec();
-        object.price = getPrice.price;
-        products.push(object); 
+      let object = {};
+      object.product = cart[i]._id;
+      object.quantity = cart[i].quantity;
+      let getPrice = await Product.findById(cart[i]._id).select("price").exec();
+      object.price = getPrice.price;
+      products.push(object);
     }
     let cartTotal = 0;
     //Tính tổng giá trị giỏ hàng
@@ -329,7 +338,7 @@ const userCart = asyncHandler(async (req, res) => {
     res.json(newCart);
   } catch (error) {
     throw new Error(error);
-  } 
+  }
 });
 
 const getUserCart = asyncHandler(async (req, res) => {
@@ -453,6 +462,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
 
 const createAddress = asyncHandler(async (req, res) => {
   const { _id } = req.user;

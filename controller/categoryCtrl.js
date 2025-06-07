@@ -3,7 +3,7 @@ const Category = require("../models/categoryModel");
 
 const createCategory = asyncHandler(async (req, res) => {
   const { name, validVariants } = req.body;
-  console.log("Request body:", req.body);
+  // console.log("Request body:", req.body);
   try {
     const category = await Category.create({ name, validVariants });
     res.status(201).json(category);

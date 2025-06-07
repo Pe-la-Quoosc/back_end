@@ -75,40 +75,45 @@ const getaProduct = asyncHandler(async (req, res) => {
 
 const getAllProducts = asyncHandler(async (req, res) => {
 
-  try {
+  // try {
 
-    // Filtering
-    const queryObj = qs.parse(req._parsedUrl.query)
-    const excludedFields = ["page", "sort", "limit", "fields"];
-    excludedFields.forEach((el) => delete queryObj[el]);
-    console.log(queryObj);
+  //   // Filtering
+  //   const queryObj = qs.parse(req._parsedUrl.query)
+  //   const excludedFields = ["page", "sort", "limit", "fields"];
+  //   excludedFields.forEach((el) => delete queryObj[el]);
+  //   console.log(queryObj);
 
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+  //   let queryStr = JSON.stringify(queryObj);
+  //   queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
 
-    let query = Product.find(JSON.parse(queryStr));
+  //   let query = Product.find(JSON.parse(queryStr));
     
-    // Sorting
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(",").join(" ");
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort("createdAt");
-    }
-    // Pagination
-    const page = req.query.page;
-    const limit = req.query.limit;
-    const skip = (page - 1) * limit;
-    query = query.skip(skip).limit(limit);
-    console.log(page, limit, skip);
-    if (req.query.page) {
-      const totalProducts = await Product.countDocuments();
-      if (skip >= totalProducts) throw new Error("This page does not exist");
-    }
-    const product = await query;
-    res.json(product);
+  //   // Sorting
+  //   if (req.query.sort) {
+  //     const sortBy = req.query.sort.split(",").join(" ");
+  //     query = query.sort(sortBy);
+  //   } else {
+  //     query = query.sort("createdAt");
+  //   }
+  //   // Pagination
+  //   const page = req.query.page;
+  //   const limit = req.query.limit;
+  //   const skip = (page - 1) * limit;
+  //   query = query.skip(skip).limit(limit);
+  //   console.log(page, limit, skip);
+  //   if (req.query.page) {
+  //     const totalProducts = await Product.countDocuments();
+  //     if (skip >= totalProducts) throw new Error("This page does not exist");
+  //   }
+  //   const product = await query;
+  //   res.json(product);
   
-  
+    try {
+    const products = await Product.find()
+      .populate("category", "name")
+      .exec();
+
+    res.json(products);
   } catch (error) {
     throw new Error(error);
   }

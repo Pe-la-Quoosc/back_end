@@ -7,7 +7,7 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
   if (req?.headers?.authorization?.startsWith("Bearer")) {
     try {
       token = req.headers.authorization.split(" ")[1];
-      // console.log(token);
+      console.log(token);
       if (token) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
@@ -23,6 +23,8 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
     throw new Error("There is no token attached to the header");
   }
 });
+
+
 
 const isAdmin = asyncHandler(async (req, res, next) => {
 //   console.log(req.user);

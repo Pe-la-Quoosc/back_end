@@ -34,6 +34,7 @@ router.get("/cart", authMiddleware, getUserCart);
 router.delete("/cart", authMiddleware, emptyCart);
 
 router.put("/password", authMiddleware, updatePassword);
+
 router.post("/login", loginUserCtrl);
 router.post("/admin-login", loginAdmin);
 router.get("/all-users", getallUser);
