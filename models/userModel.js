@@ -2,16 +2,23 @@ const mongoose = require("mongoose"); // Erase if already required
 const bcrypt = require("bcrypt"); // For password hashing
 const crypto = require("crypto"); // For generating secure tokens
 // Declare the Schema of the Mongo model
+const addressSchema = new mongoose.Schema(
+  {
+    address: { type: String, required: true }, // Địa chỉ đã chọn
+    detail_address: { type: String, required: true }, // Địa chỉ cụ thể
+  },
+  { _id: false }
+);
 var userSchema = new mongoose.Schema(
-  { 
-    username:{
-      type:String,
-      required:true,
-      unique:true,
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
     },
     fullname: {
       type: String,
-      default:null,
+      default: null,
     },
     email: {
       type: String,
@@ -20,7 +27,7 @@ var userSchema = new mongoose.Schema(
     },
     mobile: {
       type: String,
-      default:null,
+      default: null,
     },
     password: {
       type: String,
@@ -38,7 +45,7 @@ var userSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
-    address: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
+    address: [addressSchema],
     gender: {
       type: String,
       default: "other",
@@ -57,7 +64,7 @@ var userSchema = new mongoose.Schema(
 );
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.isModified("password")) {
     next();
   }
   const salt = await bcrypt.genSalt(10);
@@ -76,6 +83,6 @@ userSchema.methods.createPasswordResetToken = async function () {
     .digest("hex");
   this.passwordResetExpires = Date.now() + 30 * 60 * 1000; // Token valid for 30 minutes
   return resetToken;
-}
+};
 //Export the model
 module.exports = mongoose.model("User", userSchema);

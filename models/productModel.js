@@ -1,53 +1,54 @@
-const mongoose = require('mongoose'); // Erase if already required
+const mongoose = require("mongoose"); // Erase if already required
 
-
-const variantSchema = new mongoose.Schema({},{strict: false});
-var productSchema = new mongoose.Schema({
-    title:{
-        type:String,
-        required:true,
+const variantSchema = new mongoose.Schema({
+  type: { type: String, required: true }, // "color", "size",...
+  values: [{ type: String, required: true }], // ["Xanh", "Đỏ"], ["S", "M"],...
+  defaultValue: { type: String }, // Giá trị mặc định (nếu có)
+});
+var productSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
     },
-    slug:{
-        type:String,
-        required:true,
-        lowercase:true,
+    slug: {
+      type: String,
+      required: true,
+      lowercase: true,
     },
-    description:{
-        type:String,
-        required:true,
+    description: {
+      type: [String],
+      default: [],
+      required: true,
     },
-    price:{
-        type:Number,
-        required:true,
+    price: {
+      type: Number,
+      required: true,
     },
-    category:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'Category',
-        required:true,
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
     },
-    quantity:{ type:Number, required:true },
-    sold:{
-        type:Number,
-        default:0,
+    quantity: { type: Number, required: true },
+    sold: {
+      type: Number,
+      default: 0,
     },
-    discountPercentage:{
-        type:Number,
-        default:0,
+    discountPercentage: {
+      type: Number,
+      default: 0,
     },
-    images:{
-        type:[String],
-        required:true,
-    },
-    variants:{
-       type: [variantSchema],
-       default: [],
+    images: {
+      type: [String],
+      required: true,
     },
     review: {
       type: [
         {
           user: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
+            ref: "User",
           },
           comment: {
             type: String,
@@ -67,24 +68,13 @@ var productSchema = new mongoose.Schema({
       ],
       default: null, // Đặt giá trị mặc định là null
     },
-    ratings: {
-      type: [
-        {
-          star: Number,
-          comment: String,
-          postby: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-          },
-        },
-      ],
-      default: null, // Đặt giá trị mặc định là null
+    totalrating: {
+      type: String,
+      default: 0,
     },
-    totalrating:{
-        type:String,
-        default:0,
-    },
-},{ timestamps: true });
+  },
+  { timestamps: true }
+);
 
 //Export the model
-module.exports = mongoose.model('Product', productSchema);
+module.exports = mongoose.model("Product", productSchema);
