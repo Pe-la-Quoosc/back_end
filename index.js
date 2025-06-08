@@ -34,6 +34,7 @@ app.use("/api/blog",blogRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/blog-category", blogCategoryRouter);
 app.use("/api/coupon", couponRouter);
+app.use("/api/address", AddressRouter);
 
 app.use("/api/cart", cartRouter);
 app.use("/api/address", addressRouter);
