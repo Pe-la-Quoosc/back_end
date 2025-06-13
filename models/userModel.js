@@ -36,6 +36,7 @@ var userSchema = new mongoose.Schema(
     role: {
       type: String,
       default: "user",
+      enum: ["user", "admin"],
     },
     isBlocked: {
       type: Boolean,
@@ -45,27 +46,14 @@ var userSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
-<<<<<<< HEAD
-    address: [addressSchema],
-=======
     address: {
-      province: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Address",
-      },
-      district: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Address",
-      },
-      ward: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Address",
-      },
-      street: {
+      address: {
+        type: String,
+      }, 
+      detail_address: {
         type: String,
       },
     },
->>>>>>> 2d33d501f32f1f0d7e90ab3dfac174fe6fe3890d
     gender: {
       type: String,
       default: "other",

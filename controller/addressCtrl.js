@@ -4,7 +4,6 @@ const Address = require("../models/addressModel");
 const getAddressList = asyncHandler(async (req, res) => {
   try {
     const addresses = await Address.findOne(); // Lấy dữ liệu từ MongoDB
-    console.log("Addresses from DB:", addresses); // Kiểm tra dữ liệu từ MongoDB
     res.json(addresses); // Trả về dữ liệu
   } catch (error) {
     console.error("Error fetching addresses:", error); // Kiểm tra lỗi

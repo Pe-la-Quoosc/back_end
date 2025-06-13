@@ -10,10 +10,10 @@ const { createProduct,
 const { isAdmin,authMiddleware } = require('../middlewares/authMiddleware');
 
 
-router.post('/', authMiddleware,isAdmin, createProduct);
+router.post('/', createProduct);
 router.get('/:id', getaProduct);
 router.put("/rating", authMiddleware, rating);
-router.put('/:id',authMiddleware,isAdmin, updateProduct);
+router.put('/:id', updateProduct);
 router.get('/', getAllProducts);
 router.delete('/:id',authMiddleware,isAdmin, deleteProduct);
 

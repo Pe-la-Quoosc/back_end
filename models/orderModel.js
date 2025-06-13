@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 var orderSchema = new mongoose.Schema({
-    product:[
+    products:[
         {
             product: {
                 type: mongoose.Schema.Types.ObjectId,
@@ -21,6 +21,10 @@ var orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+    totalAmount: {
+        type: Number,
+        default: 0
+    }
 },{
     timestamps: true
 });

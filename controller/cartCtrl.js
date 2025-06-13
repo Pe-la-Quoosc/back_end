@@ -92,7 +92,6 @@ const updateCartItem = asyncHandler(async (req, res) => {
       (total, item) => total + item.price * item.quantity,
       0
     );
-
     await cart.save();
     res.json(cart);
   } catch (error) {
