@@ -7,7 +7,7 @@ const {
 } = require('../controller/orderCtrl');
 const { isAdmin, authMiddleware } = require('../middlewares/authMiddleware');
 
-router.get('/',  getOrders);
+router.get('/',  authMiddleware, isAdmin, getOrders);
 router.delete('/:id', authMiddleware, isAdmin, deleteOrders);
 router.get('/:id', authMiddleware, isAdmin, getOneOrder);
 

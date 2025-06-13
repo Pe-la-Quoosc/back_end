@@ -406,7 +406,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
     // Tạo đơn hàng mới
     let newOrder = await new Order({
-      product: userCart.products,
+      products: userCart.products,
       paymentIntend: {
         id: uniqid(),
         method: "COD",
