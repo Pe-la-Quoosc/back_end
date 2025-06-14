@@ -369,123 +369,6 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
-// const getUserCart = asyncHandler(async (req, res) => {
-//   const { _id } = req.user;
-//   validateMongoDbId(_id);
-//   try {
-//     const cart = await Cart.findOne({ orderBy: _id }).populate(
-//       "product.product","_id title price images");
-//     res.json(cart);
-//   } catch (error) {
-//     throw new Error(error);
-//   }
-// });
-// const emptyCart = asyncHandler(async (req, res) => {
-//   const { _id } = req.user;
-//   validateMongoDbId(_id);
-//   try {
-//     const user = await User.findOne({ _id });
-//     const cart = await Cart.findOneAndDelete({ orderBy: user._id });
-//     res.json(user.cart);
-//   } catch (error) {
-//     throw new Error(error);
-//   }
-// });
-// const userCoupon = asyncHandler(async (req, res) => {
-//   const { coupon } = req.body;
-//   const { _id } = req.user;
-//   const validateCoupon = await Coupon.findOne({ name: coupon });
-//   if (!validateCoupon) {
-//     throw new Error("Invalid coupon");
-//   }
-//   const user = await User.findOne({ _id });
-//   let { products, CartTotal } = await Cart.findOne({ orderBy: user._id }).populate("product.product");
-//   let totalAfterDiscount = (
-//     CartTotal - (CartTotal * validateCoupon.discount) / 100
-//   ).toFixed(2);
-//   await Cart.findOneAndUpdate(
-//     { orderBy: user._id },
-//     { totalAfterDiscount },
-//     { new: true }
-//   );
-//   res.json(totalAfterDiscount);
-// });
-// const createOrder = asyncHandler(async (req, res) => {
-//   const { COD, couponApplied } = req.body;
-//   const { _id } = req.user;
-//   validateMongoDbId(_id);
-//   if (!COD) {
-//     throw new Error("Create cash order failed");
-//   }
-//   const user = await User.findById(_id);
-//   validateMongoDbId(_id);
-//   try {
-//     if (!COD) {
-//       throw new Error("Create cash order failed");
-//     }
-//     const user = await User.findById(_id);
-//     const userCart = await Cart.findOne({ orderBy: user._id });
-//     let finalAmount = 0;
-//     if (couponApplied && userCart.totalAfterDiscount) {
-//       finalAmount = userCart.totalAfterDiscount;
-//     }
-//     else {
-//       finalAmount = userCart.CartTotal;
-//     }
-
-//     let newOrder = await new Order({
-//       products: userCart.product,
-//       paymentIntend: {
-//         id: uniqid(),
-//         method: "COD",
-//         amount: finalAmount,
-//         status: "Cash on Delivery",
-//         created: Date.now(),
-//         currency: "vnd",
-//       },
-//       orderBy: user._id,
-//       orderStatus: "Cash on Delivery",
-//     }).save();
-//     let update = userCart.product.map((item) => {
-//       return {
-//         updateOne: {
-//           filter: { _id: item.product._id },
-//           update: { $inc: { quantity: -item.quantity, sold: +item.quantity } },
-//         },
-//       };
-//     });
-//     const updated = await Product.bulkWrite(update, {});
-//     res.json(newOrder);
-//   } catch (error) {
-//     throw new Error(error);
-//   }
-// });
-// const getOrder = asyncHandler(async (req, res) => {
-//   const { _id } = req.user;
-//   validateMongoDbId(_id);
-//   try {
-//     const orders = await Order.find({ orderBy: _id }).populate("products.product");
-//     res.json(orders);
-//   } catch (error) {
-//     throw new Error(error);
-//   }
-// });
-// const updateOrderStatus = asyncHandler(async (req, res) => {
-//   const { orderId } = req.params;
-//   const { status } = req.body;
-//   validateMongoDbId(orderId);
-//   try {
-//     const updatedOrder = await Order.findByIdAndUpdate(
-//       orderId,
-//       { orderStatus: status },
-//       { new: true }
-//     );
-//     res.json(updatedOrder);
-//   } catch (error) {
-//     throw new Error(error);
-//   }
-// });
-
 
 const emptyCart = asyncHandler(async (req, res) => {
   const { _id } = req.user;
@@ -500,33 +383,68 @@ const emptyCart = asyncHandler(async (req, res) => {
 });
 
 const userCoupon = asyncHandler(async (req, res) => {
-  const { coupon } = req.body;
+  const { coupon, freeship } = req.body;
   const { _id } = req.user;
 
-  // Tìm coupon không phân biệt hoa thường
-  const validateCoupon = await Coupon.findOne({ name: coupon.toUpperCase(), isActive: true });
-  if (!validateCoupon) {
-    throw new Error("Invalid coupon");
-  }
-
-  // Kiểm tra hạn sử dụng
-  if (new Date(validateCoupon.expiry) < new Date()) {
-    throw new Error("Coupon has expired");
-  }
+  let discountAmount = 0;
+  let shippingFee = 5000; // Phí vận chuyển mặc định
 
   // Lấy cart của user
-  const user = await User.findOne({ _id });
-  let { products, CartTotal } = await Cart.findOne({ orderBy: user._id }).populate("product.product");
-  let totalAfterDiscount = (
-    CartTotal - (CartTotal * validateCoupon.discount) / 100
-  ).toFixed(2);
-  await Cart.findOneAndUpdate(
-    { orderBy: user._id },
-    { totalAfterDiscount },
+  const cart = await cartModel.findOne({ orderBy: _id });
+  if (!cart) throw new Error("Cart not found");
+
+  let cartTotal = cart.CartTotal || 0;
+
+  // Áp dụng voucher giảm giá sản phẩm
+  if (coupon) {
+    const validateCoupon = await Coupon.findOne({ name: coupon, isActive: true, type: "product" });
+    if (!validateCoupon) throw new Error("Invalid coupon");
+    if (new Date(validateCoupon.expiry) < new Date()) throw new Error("Coupon has expired");
+    if (cartTotal < (validateCoupon.minOrderValue || 0)) {
+      throw new Error(`Order value must be at least ${validateCoupon.minOrderValue} to use this coupon`);
+    }
+    if (validateCoupon.discountType === "percentage") {
+      discountAmount = (cartTotal * validateCoupon.discountValue) / 100;
+      if (validateCoupon.maxDiscountAmount) {
+        discountAmount = Math.min(discountAmount, validateCoupon.maxDiscountAmount);
+      }
+    } else if (validateCoupon.discountType === "fixed") {
+      discountAmount = validateCoupon.discountValue;
+      if (validateCoupon.maxDiscountAmount) {
+        discountAmount = Math.min(discountAmount, validateCoupon.maxDiscountAmount);
+      }
+    }
+  }
+
+  // Áp dụng voucher freeship
+  if (freeship) {
+    const validateFreeship = await Coupon.findOne({ name: freeship, isActive: true, type: "shipping" });
+    if (!validateFreeship) throw new Error("Invalid freeship coupon");
+    if (new Date(validateFreeship.expiry) < new Date()) throw new Error("Freeship coupon has expired");
+
+    // Áp dụng mã freeship vào phí vận chuyển mặc định 5000
+    if (validateFreeship.discountType === "percentage") {
+      // Giảm theo phần trăm phí ship
+      const discountShip = (shippingFee * validateFreeship.discountValue) / 100;
+      shippingFee = Math.max(0, shippingFee - discountShip);
+    } else if (validateFreeship.discountType === "fixed") {
+      // Giảm số tiền cố định vào phí ship
+      shippingFee = Math.max(0, shippingFee - validateFreeship.discountValue);
+    }
+  }
+
+  // Tổng sau giảm giá và cộng phí ship (sau khi áp dụng freeship)
+  let totalAfterDiscount = cartTotal - discountAmount + shippingFee;
+  if (totalAfterDiscount < 0) totalAfterDiscount = 0;
+
+  // Lưu lại vào cart
+  await cartModel.findOneAndUpdate(
+    { orderBy: _id },
+    { totalAfterDiscount},
     { new: true }
   );
 
-  res.json({ totalAfterDiscount, discountAmount });
+  res.json({ totalAfterDiscount, discountAmount, shippingFee });
 });
 
 const createOrder = asyncHandler(async (req, res) => {
@@ -554,7 +472,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
     // Tạo đơn hàng mới
     let newOrder = await new Order({
-      products: userCart.products,
+      product: userCart.products,
       paymentIntend: {
         id: uniqid(),
         method: "COD",

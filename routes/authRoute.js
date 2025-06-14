@@ -52,7 +52,7 @@ router.put("/block-user/:id",authMiddleware,isAdmin,blockUser);
 router.put("/unblock-user/:id",authMiddleware,isAdmin,unblockUser);
 
 
-router.post("/cart/apply-coupon", authMiddleware, userCoupon);
+router.put("/cart/apply-coupon", authMiddleware, userCoupon);
 router.post("/cart/cash-order", authMiddleware, createOrder);
 
 router.put("/order/update-order/:id", authMiddleware, isAdmin, updateOrderStatus);
