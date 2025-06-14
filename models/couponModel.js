@@ -25,11 +25,11 @@ const couponSchema = new mongoose.Schema({
     },
     maxDiscountAmount: {
         type: Number,
-        default: null, // nếu là % thì giới hạn tối đa có thể áp dụng
+        default: null,
     },
     minOrderValue: {
         type: Number,
-        default: 0, // giá trị đơn hàng tối thiểu để áp dụng mã
+        default: 0,
     },
     expiry: {
         type: Date,
@@ -51,6 +51,6 @@ const couponSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-couponSchema.index({ name: 1 });
+// couponSchema.index({ name: 1 });
 
 module.exports = mongoose.model('Coupon', couponSchema);

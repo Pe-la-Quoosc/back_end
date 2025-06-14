@@ -14,6 +14,7 @@ const orderRouter = require('./routes/orderRoute');
 const cartRouter = require("./routes/cartRoute");
 const couponRouter = require('./routes/couponRoute');
 const addressRouter = require('./routes/addressRoute');
+const reviewRouter = require('./routes/reviewRoute');
 const { notFound, errorHandler } = require('./middlewares/errorHandler');
 const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
@@ -25,8 +26,9 @@ app.use(cors({
 }));
 
 app.use(morgan("dev")); 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+// app.use(bodyParser.json());
+app.use(express.json()); // Thay thế bodyParser.json() bằng express.json()
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use("/api/user",authRouter);
@@ -43,6 +45,8 @@ app.use("/api/address", addressRouter);
 
 
 app.use("/api/category", categoryRouter);
+
+app.use("/api/reviews", reviewRouter);
 
 app.use(notFound);
 app.use(errorHandler);

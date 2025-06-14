@@ -17,11 +17,11 @@ const createUser = asyncHandler(async (req, res) => {
   const findUserByEmail = await User.findOne({ email });
   const findUserByUsername = await User.findOne({ username });
   if (findUserByEmail) {
-    throw new Error("Email already exists");
+    return res.status(400).json({ error: "Email đã tồn tại" });
   }
 
   if (findUserByUsername) {
-    throw new Error("Username already exists");
+    return res.status(400).json({ error: "Username đã tồn tại" });
   }
 
   const newUser = await User.create({
@@ -33,37 +33,41 @@ const createUser = asyncHandler(async (req, res) => {
     orderBy: newUser._id,
     products: [],
   });
+  const refreshToken = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+
+  newUser.refreshToken = refreshToken;
   await newUser.save();
-  res.json(newUser);
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+    maxAge: 3 * 24 * 60 * 60 * 1000,
+  });
+  return res.status(201).json(newUser);
 });
 //Login user
 const loginUserCtrl = asyncHandler(async (req, res) => {
   const { username, password } = req.body;
-  console.log("Email:", username, "Password:", password);
+  console.log("Login attempt with username:", req);
   const findUser = await User.findOne({ username });
-  console.log("User found:", findUser);
-  if (findUser && findUser.isPasswordMatched(password)) {
-    const refreshToken = await generateRefreshToken(findUser?.id);
-    const updateUser = await User.findByIdAndUpdate(
-      findUser.id,
-      {
-        refreshToken: refreshToken,
-      },
-      {
-        new: true,
-      }
-    );
+
+  if (findUser && (await findUser.isPasswordMatched(password))) {
+    const refreshToken = await generateRefreshToken(findUser?._id); // Tạo refresh token
+    const accessToken = generateToken(findUser?._id); // Tạo access token
+
+    // Lưu refresh token vào cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      maxAge: 72 * 60 * 60 * 1000,
+      secure: true,
+      sameSite: "Strict",
+      maxAge: 3 * 24 * 60 * 60 * 1000, // 3 ngày
     });
+
+    // Trả về access token
     res.json({
-      _id: findUser?._id,
-      fullname: findUser?.fullname,
-      username: findUser?.username,
-      email: findUser?.email,
-      mobile: findUser?.mobile,
-      token: generateToken(findUser?._id), // Assuming generateToken is imported from jwtToken.js
+      token: accessToken, // Access token trả về trong response
     });
   } else {
     throw new Error("Invalid credentials");
@@ -160,31 +164,7 @@ const handleRefreshToken = asyncHandler(async (req, res) => {
     });
   });
 });
-//Update a user
-const updateaUser = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-  validateMongoDbId(_id);
-  // console.log(id);
-  try {
-    const updatedUser = await User.findByIdAndUpdate(
-      _id,
-      {
-        fullname: req?.body?.fullname,
-        email: req?.body?.email,
-        mobile: req?.body?.mobile,
-        password: req?.body?.password,
-      },
-      {
-        new: true,
-      }
-    );
-    res.json({
-      updatedUser,
-    });
-  } catch (error) {
-    throw new Error(error);
-  }
-});
+
 //Update user address
 const updateUserAddress = asyncHandler(async (req, res) => {
   const { _id } = req.user;
@@ -203,6 +183,40 @@ const updateUserAddress = asyncHandler(async (req, res) => {
     res.json(updatedUser);
   } catch (error) {
     throw new Error(error);
+  }
+});
+//Update user address
+const updateUserAddress = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id; // Lấy userId từ middleware xác thực
+    const { fullname, phone, address } = req.body; // Lấy dữ liệu từ request body
+
+    const user = await User.findById(userId); // Tìm user theo ID
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Cập nhật thông tin user
+    user.fullname = fullname;
+    user.phone = phone;
+
+    const formattedAddress = {
+      address: address.address, // Tên đầy đủ của địa chỉ (Tỉnh/Thành phố, Quận/Huyện, Phường/Xã)
+      detail_address: address.detail_address, // Địa chỉ cụ thể
+    };
+    // Ghi đè địa chỉ hiện tại
+    user.address = [formattedAddress]; // Ghi đè mảng `address` với địa chỉ mới
+
+    await user.save(); // Lưu thay đổi vào database
+
+    res
+      .status(200)
+      .json({ message: "User address updated successfully", user });
+  } catch (error) {
+    console.error("Error updating user address:", error);
+    res
+      .status(500)
+      .json({ message: error.message || "Failed to update user address" });
   }
 });
 //Block a user
@@ -250,28 +264,92 @@ const unblockUser = asyncHandler(async (req, res) => {
 });
 //logout user
 const logoutUser = asyncHandler(async (req, res) => {
-  const cookie = req.cookies;
-  if (!cookie?.refreshToken) {
-    throw new Error("No refresh token in cookies");
+  const cookies = req.cookies;
+  console.log("Cookie", cookies);
+
+  if (!cookies?.refreshToken) {
+    return res.status(400).json({ message: "No refresh token in cookies" });
   }
-  const refreshToken = cookie.refreshToken;
+
+  const refreshToken = cookies.refreshToken;
+
   const user = await User.findOne({ refreshToken });
+
   if (!user) {
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: true,
+      sameSite: "Strict",
     });
     return res.sendStatus(204);
   }
-  await User.findOneAndUpdate(refreshToken, {
-    refreshToken: "",
-  });
+
+  await User.findOneAndUpdate(
+    { refreshToken: refreshToken },
+    { refreshToken: "" }
+  );
+
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: true,
+    sameSite: "Strict",
   });
+
   return res.sendStatus(204);
 });
+//Get current user
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  console.log("Current user ID:", userId);
+  validateMongoDbId(userId); 
+  try {
+    const user = await User.findById(userId);
+    res.json(user);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+//Update current user
+const updateCurrentUser = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  validateMongoDbId(_id);
+
+  const fieldsToUpdate = {};
+
+  // Chỉ cập nhật các trường cho phép
+  if (req.body.fullname) fieldsToUpdate.fullname = req.body.fullname;
+  if (req.body.email) fieldsToUpdate.email = req.body.email;
+  if (req.body.mobile) fieldsToUpdate.mobile = req.body.mobile;
+  if (req.body.gender) fieldsToUpdate.gender = req.body.gender;
+  if (req.body.avatar) fieldsToUpdate.avatar = req.body.avatar;
+  if (req.body.address) fieldsToUpdate.address = req.body.address;
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      _id,
+      fieldsToUpdate,
+      { new: true }
+    );
+    res.json({ success: true, user: updatedUser });
+  } catch (error) {
+    throw new Error("Cập nhật thất bại: " + error.message);
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //Update password
 const updatePassword = asyncHandler(async (req, res) => {
@@ -295,7 +373,7 @@ const forgotPasswordToken = asyncHandler(async (req, res) => {
   try {
     const token = await user.createPasswordResetToken();
     await user.save();
-    const resetUrl = `Hi, please follow this link to reset your password. This link is valid for 10 minutes. <a href='http://localhost:3002/api/user/reset-password/${token}'>Click here</a>`;
+    const resetUrl = `Hi, please follow this link to reset your password. This link is valid for 10 minutes. <a href='http://localhost:3000/reset-password/${token}'>Click here</a>`;
     const data = {
       to: email,
       text: "Hey user",
@@ -325,8 +403,135 @@ const resetPassword = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
+// const getUserCart = asyncHandler(async (req, res) => {
+//   const { _id } = req.user;
+//   validateMongoDbId(_id);
+//   try {
+//     const cart = await Cart.findOne({ orderBy: _id }).populate(
+//       "product.product","_id title price images");
+//     res.json(cart);
+//   } catch (error) {
+//     throw new Error(error);
+//   }
+// });
+// const emptyCart = asyncHandler(async (req, res) => {
+//   const { _id } = req.user;
+//   validateMongoDbId(_id);
+//   try {
+//     const user = await User.findOne({ _id });
+//     const cart = await Cart.findOneAndDelete({ orderBy: user._id });
+//     res.json(user.cart);
+//   } catch (error) {
+//     throw new Error(error);
+//   }
+// });
+// const userCoupon = asyncHandler(async (req, res) => {
+//   const { coupon } = req.body;
+//   const { _id } = req.user;
+//   const validateCoupon = await Coupon.findOne({ name: coupon });
+//   if (!validateCoupon) {
+//     throw new Error("Invalid coupon");
+//   }
+//   const user = await User.findOne({ _id });
+//   let { products, CartTotal } = await Cart.findOne({ orderBy: user._id }).populate("product.product");
+//   let totalAfterDiscount = (
+//     CartTotal - (CartTotal * validateCoupon.discount) / 100
+//   ).toFixed(2);
+//   await Cart.findOneAndUpdate(
+//     { orderBy: user._id },
+//     { totalAfterDiscount },
+//     { new: true }
+//   );
+//   res.json(totalAfterDiscount);
+// });
+// const createOrder = asyncHandler(async (req, res) => {
+//   const { COD, couponApplied } = req.body;
+//   const { _id } = req.user;
+//   validateMongoDbId(_id);
+//   if (!COD) {
+//     throw new Error("Create cash order failed");
+//   }
+//   const user = await User.findById(_id);
+//   validateMongoDbId(_id);
+//   try {
+//     if (!COD) {
+//       throw new Error("Create cash order failed");
+//     }
+//     const user = await User.findById(_id);
+//     const userCart = await Cart.findOne({ orderBy: user._id });
+//     let finalAmount = 0;
+//     if (couponApplied && userCart.totalAfterDiscount) {
+//       finalAmount = userCart.totalAfterDiscount;
+//     }
+//     else {
+//       finalAmount = userCart.CartTotal;
+//     }
+
+//     let newOrder = await new Order({
+//       products: userCart.product,
+//       paymentIntend: {
+//         id: uniqid(),
+//         method: "COD",
+//         amount: finalAmount,
+//         status: "Cash on Delivery",
+//         created: Date.now(),
+//         currency: "vnd",
+//       },
+//       orderBy: user._id,
+//       orderStatus: "Cash on Delivery",
+//     }).save();
+//     let update = userCart.product.map((item) => {
+//       return {
+//         updateOne: {
+//           filter: { _id: item.product._id },
+//           update: { $inc: { quantity: -item.quantity, sold: +item.quantity } },
+//         },
+//       };
+//     });
+//     const updated = await Product.bulkWrite(update, {});
+//     res.json(newOrder);
+//   } catch (error) {
+//     throw new Error(error);
+//   }
+// });
+// const getOrder = asyncHandler(async (req, res) => {
+//   const { _id } = req.user;
+//   validateMongoDbId(_id);
+//   try {
+//     const orders = await Order.find({ orderBy: _id }).populate("products.product");
+//     res.json(orders);
+//   } catch (error) {
+//     throw new Error(error);
+//   }
+// });
+// const updateOrderStatus = asyncHandler(async (req, res) => {
+//   const { orderId } = req.params;
+//   const { status } = req.body;
+//   validateMongoDbId(orderId);
+//   try {
+//     const updatedOrder = await Order.findByIdAndUpdate(
+//       orderId,
+//       { orderStatus: status },
+//       { new: true }
+//     );
+//     res.json(updatedOrder);
+//   } catch (error) {
+//     throw new Error(error);
+//   }
+// });
 
 
+const emptyCart = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  validateMongoDbId(_id);
+  try {
+    const user = await User.findOne({ _id });
+    const cart = await Cart.findOneAndDelete({ orderBy: user._id });
+    res.json(user.cart);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
 
 const userCoupon = asyncHandler(async (req, res) => {
   const { coupon } = req.body;
@@ -400,7 +605,8 @@ const createOrder = asyncHandler(async (req, res) => {
     let finalAmount = 0;
     if (couponApplied && userCart.totalAfterDiscount) {
       finalAmount = userCart.totalAfterDiscount;
-    } else {
+    }
+    else {
       finalAmount = userCart.CartTotal;
     }
 
@@ -440,7 +646,9 @@ const getOrder = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   validateMongoDbId(_id);
   try {
-    const orders = await Order.find({ orderBy: _id }).populate("products.product");
+    const orders = await Order.find({ orderBy: _id }).populate(
+      "products.product"
+    );
     res.json(orders);
   } catch (error) {
     throw new Error(error);
@@ -463,7 +671,6 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 });
 
-
 const createAddress = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const { province, district, ward, street } = req.body;
@@ -481,10 +688,10 @@ const createAddress = asyncHandler(async (req, res) => {
 module.exports = {
   createUser,
   loginUserCtrl,
+  updateCurrentUser,
   getallUser,
   getaUser,
   deleteUser,
-  updateaUser,
   blockUser,
   unblockUser,
   handleRefreshToken,
@@ -499,4 +706,5 @@ module.exports = {
   getOrder,
   updateOrderStatus,
   createAddress,
+  getCurrentUser,
 };

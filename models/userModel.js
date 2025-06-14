@@ -77,19 +77,20 @@ userSchema.pre("save", async function (next) {
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 userSchema.methods.isPasswordMatched = async function (enteredPassword) {
-  //  console.log("Comparing passwords:", enteredPassword, this.password);
-  return bcrypt.compare(enteredPassword, this.password);
+  return await bcrypt.compare(enteredPassword, this.password);
 };
+
 userSchema.methods.createPasswordResetToken = async function () {
   const resetToken = crypto.randomBytes(32).toString("hex");
   this.passwordResetToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-  this.passwordResetExpires = Date.now() + 30 * 60 * 1000; // Token valid for 30 minutes
+  this.passwordResetExpires = Date.now() + 60 * 60 * 1000; // Token valid for 30 minutes
   return resetToken;
 };
 //Export the model

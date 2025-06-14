@@ -5,7 +5,6 @@ const {
     getallUser,
     getaUser,
     deleteUser,
-    updateaUser,
     blockUser,
     unblockUser,
     handleRefreshToken,
@@ -20,12 +19,14 @@ const {
     getOrder,
     updateOrderStatus,
     createAddress,
+    getCurrentUser,
+    updateCurrentUser,
 } = require('../controller/userCtrl');
 const { authMiddleware, isAdmin } = require('../middlewares/authMiddleware');
 const router=express.Router();
 
 router.post("/register", createUser);
-router.post("/forgot-password-token", forgotPasswordToken);
+router.post("/forgot-password", forgotPasswordToken);
 router.put("/reset-password/:token", resetPassword);
 router.get("/order", authMiddleware, getOrder);
 router.put("/password", authMiddleware, updatePassword);
@@ -35,8 +36,16 @@ router.post("/admin-login", loginAdmin);
 router.get("/all-users", getallUser);
 router.get("/refresh",handleRefreshToken);
 router.post("/logout",logoutUser);
+//Get current user
+router.get("/me", authMiddleware, getCurrentUser);
+//Update current user
+router.patch("/update-me",authMiddleware,updateCurrentUser);
 router.get("/:id",authMiddleware,isAdmin,getaUser);
 router.delete("/:id",deleteUser); 
+
+
+
+
 
 router.put("/update-address", authMiddleware, updateUserAddress);
 router.put("/block-user/:id",authMiddleware,isAdmin,blockUser);
