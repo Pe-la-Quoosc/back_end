@@ -5,7 +5,6 @@ const {
     getallUser,
     getaUser,
     deleteUser,
-    updateaUser,
     blockUser,
     unblockUser,
     handleRefreshToken,
@@ -13,47 +12,48 @@ const {
     updatePassword,
     forgotPasswordToken,
     resetPassword,
-    // getUserCart,
     loginAdmin,
     updateUserAddress,
-    // emptyCart,
-    // userCoupon,
-    // createOrder,
-    // getOrder,
-    // updateOrderStatus,
     userCoupon,
     createOrder,
     getOrder,
     updateOrderStatus,
     createAddress,
+    getCurrentUser,
+    updateCurrentUser,
 } = require('../controller/userCtrl');
 const { authMiddleware, isAdmin } = require('../middlewares/authMiddleware');
 const router=express.Router();
 
 router.post("/register", createUser);
-router.post("/forgot-password-token", forgotPasswordToken);
+router.post("/forgot-password", forgotPasswordToken);
 router.put("/reset-password/:token", resetPassword);
 
-// router.get("/cart", authMiddleware, getUserCart);
-// router.delete("/cart", authMiddleware, emptyCart);
 
-router.put("/password", authMiddleware, updatePassword);
+router.put("/update-password", authMiddleware, updatePassword);
 
 router.post("/login", loginUserCtrl);
 router.post("/admin-login", loginAdmin);
 router.get("/all-users", getallUser);
 router.get("/refresh",handleRefreshToken);
 router.post("/logout",logoutUser);
+//Get current user
+router.get("/me", authMiddleware, getCurrentUser);
+//Update current user
+router.patch("/update-me",authMiddleware,updateCurrentUser);
 router.get("/:id",authMiddleware,isAdmin,getaUser);
 router.delete("/:id",deleteUser); 
 
+
+
+
+
 router.patch("/update-address",authMiddleware, updateUserAddress);
-router.put("/edit-user",authMiddleware,updateaUser);
+
 router.put("/block-user/:id",authMiddleware,isAdmin,blockUser);
 router.put("/unblock-user/:id",authMiddleware,isAdmin,unblockUser);
 
 
-router.post("/cart", authMiddleware, userCart);
 router.post("/cart/apply-coupon", authMiddleware, userCoupon);
 router.post("/cart/cash-order", authMiddleware, createOrder);
 router.get("/order", authMiddleware, getOrder);

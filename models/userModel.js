@@ -45,27 +45,7 @@ var userSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
-<<<<<<< HEAD
     address: [addressSchema],
-=======
-    address: {
-      province: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Address",
-      },
-      district: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Address",
-      },
-      ward: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Address",
-      },
-      street: {
-        type: String,
-      },
-    },
->>>>>>> 2d33d501f32f1f0d7e90ab3dfac174fe6fe3890d
     gender: {
       type: String,
       default: "other",
@@ -89,19 +69,20 @@ userSchema.pre("save", async function (next) {
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 userSchema.methods.isPasswordMatched = async function (enteredPassword) {
-  //  console.log("Comparing passwords:", enteredPassword, this.password);
-  return bcrypt.compare(enteredPassword, this.password);
+  return await bcrypt.compare(enteredPassword, this.password);
 };
+
 userSchema.methods.createPasswordResetToken = async function () {
   const resetToken = crypto.randomBytes(32).toString("hex");
   this.passwordResetToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-  this.passwordResetExpires = Date.now() + 30 * 60 * 1000; // Token valid for 30 minutes
+  this.passwordResetExpires = Date.now() + 60 * 60 * 1000; // Token valid for 30 minutes
   return resetToken;
 };
 //Export the model
