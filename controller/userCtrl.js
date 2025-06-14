@@ -185,40 +185,6 @@ const updateUserAddress = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
-//Update user address
-const updateUserAddress = asyncHandler(async (req, res) => {
-  try {
-    const userId = req.user._id; // Lấy userId từ middleware xác thực
-    const { fullname, phone, address } = req.body; // Lấy dữ liệu từ request body
-
-    const user = await User.findById(userId); // Tìm user theo ID
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Cập nhật thông tin user
-    user.fullname = fullname;
-    user.phone = phone;
-
-    const formattedAddress = {
-      address: address.address, // Tên đầy đủ của địa chỉ (Tỉnh/Thành phố, Quận/Huyện, Phường/Xã)
-      detail_address: address.detail_address, // Địa chỉ cụ thể
-    };
-    // Ghi đè địa chỉ hiện tại
-    user.address = [formattedAddress]; // Ghi đè mảng `address` với địa chỉ mới
-
-    await user.save(); // Lưu thay đổi vào database
-
-    res
-      .status(200)
-      .json({ message: "User address updated successfully", user });
-  } catch (error) {
-    console.error("Error updating user address:", error);
-    res
-      .status(500)
-      .json({ message: error.message || "Failed to update user address" });
-  }
-});
 //Block a user
 const blockUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -550,34 +516,11 @@ const userCoupon = asyncHandler(async (req, res) => {
 
   // Lấy cart của user
   const user = await User.findOne({ _id });
-  let cart = await cartModel.findOne({ orderBy: user._id });
-  if (!cart) throw new Error("Cart not found");
-
-  let { CartTotal } = cart;
-
-  // Kiểm tra giá trị đơn hàng tối thiểu
-  if (CartTotal < (validateCoupon.minOrderValue || 0)) {
-    throw new Error(`Order value must be at least ${validateCoupon.minOrderValue} to use this coupon`);
-  }
-
-  let discountAmount = 0;
-  if (validateCoupon.discountType === "percentage") {
-    discountAmount = (CartTotal * validateCoupon.discountValue) / 100;
-    if (validateCoupon.maxDiscountAmount) {
-      discountAmount = Math.min(discountAmount, validateCoupon.maxDiscountAmount);
-    }
-  } else if (validateCoupon.discountType === "fixed") {
-    discountAmount = validateCoupon.discountValue;
-    if (validateCoupon.maxDiscountAmount) {
-      discountAmount = Math.min(discountAmount, validateCoupon.maxDiscountAmount);
-    }
-  }
-
-  let totalAfterDiscount = CartTotal - discountAmount;
-  if (totalAfterDiscount < 0) totalAfterDiscount = 0;
-
-  // Lưu lại vào cart
-  await cartModel.findOneAndUpdate(
+  let { products, CartTotal } = await Cart.findOne({ orderBy: user._id }).populate("product.product");
+  let totalAfterDiscount = (
+    CartTotal - (CartTotal * validateCoupon.discount) / 100
+  ).toFixed(2);
+  await Cart.findOneAndUpdate(
     { orderBy: user._id },
     { totalAfterDiscount },
     { new: true }
@@ -605,8 +548,7 @@ const createOrder = asyncHandler(async (req, res) => {
     let finalAmount = 0;
     if (couponApplied && userCart.totalAfterDiscount) {
       finalAmount = userCart.totalAfterDiscount;
-    }
-    else {
+    } else {
       finalAmount = userCart.CartTotal;
     }
 
