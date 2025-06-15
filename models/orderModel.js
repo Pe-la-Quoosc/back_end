@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 var orderSchema = new mongoose.Schema({
+    orderCode: { type: Number, unique: true }, 
     products:[
         {
             product: {
@@ -15,7 +16,7 @@ var orderSchema = new mongoose.Schema({
     orderStatus: {
         type: String,
         default: 'Not Processed',
-        enum: ['Not Processed', 'Processing', 'Cash on Delivery', 'Shipped', 'Delivered', 'Cancelled'],
+        enum: ['Not Processed', 'Processing','Paid', 'Cash on Delivery', 'Shipped', 'Delivered', 'Cancelled'],
     },
     orderBy: {
         type: mongoose.Schema.Types.ObjectId,

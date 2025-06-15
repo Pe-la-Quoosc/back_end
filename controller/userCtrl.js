@@ -11,6 +11,9 @@ const uniqid = require("uniqid");
 const cartModel = require("../models/cartModel");
 const Coupon = require("../models/couponModel");
 const Order = require("../models/orderModel");
+const Cart = require("../models/cartModel");
+const payOS = require("../config/payosConfig");
+const WebhookLog = require("../models/webhookLog");
 //Create user
 const createUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
@@ -545,6 +548,97 @@ const createAddress = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+
+const createPayment = async (req, res) => {
+    const { description} = req.body;
+    const { _id } = req.user;
+    const userCart = await Cart.findOne({ orderBy: _id });
+    if (!userCart) {
+        return res.status(404).json({ error: 'Đơn hàng không tồn tại' });
+    }
+    let finalAmount = 0;
+    if (userCart.totalAfterDiscount && userCart.couponApplied) {
+        finalAmount = userCart.totalAfterDiscount;
+    } else {
+        finalAmount = userCart.CartTotal;
+    }        
+    const orderCode = Date.now();
+    userCart.orderCode = orderCode;
+    await userCart.save();
+
+    const body = {
+        orderCode: orderCode,
+        customerName: req.user.firstname || 'Khách hàng',
+        amount: finalAmount,
+        description,
+        returnUrl: 'http://localhost:3000/?payment=success',
+        cancelUrl: 'http://localhost:3000/carts',
+    };
+
+    try {
+        const paymentLink = await payOS.createPaymentLink(body);
+        res.json(paymentLink);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Không thể tạo link thanh toán' });
+    }
+};
+
+const webhookHandler = async (req, res) => {
+    
+  await WebhookLog.create({ 
+    body: req.body,});
+  res.status(200).json({ message: 'Received' });
+};
+
+const processWebhookOrders = async (req, res) => {
+  try {
+    // Lấy các webhook chưa xử lý, giao dịch thành công
+    const logs = await WebhookLog.find({ 'body.data.code': '00', processed: false });
+
+    let createdOrders = [];
+    for (const log of logs) {
+      const orderCode = log.body.data.orderCode;
+      const cart = await Cart.findOne({ orderCode }).populate("products.product");
+      if (!cart) continue;
+
+      // Tạo order mới dựa trên amount và userId ở cart
+      const newOrder = await Order.create({
+          products: cart.products.map(item => ({
+            product: item.product,
+            quantity: item.quantity,
+            price: item.price
+        })),
+        paymentIntend: {
+          id: cart.orderCode,
+          method: "PayOS",
+          amount: cart.totalAfterDiscount || cart.CartTotal,
+          status: "Paid",
+          created: Date.now(),
+          currency: log.body.data.currency || "vnd",
+        },
+        orderBy: cart.orderBy,
+        orderStatus: "Paid",
+        totalAmount: cart.totalAfterDiscount || cart.CartTotal,
+      });
+
+      // Đánh dấu log đã xử lý
+      log.processed = true;
+      await log.save();
+
+      // Xóa cart
+      await Cart.findByIdAndDelete(cart._id);
+
+      createdOrders.push(newOrder);
+    }
+
+    res.json({ message: 'Processed webhook logs', createdOrders });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error processing webhook logs' });
+  }
+};
+
 module.exports = {
   createUser,
   loginUserCtrl,
@@ -567,4 +661,7 @@ module.exports = {
   updateOrderStatus,
   createAddress,
   getCurrentUser,
+  createPayment,
+  webhookHandler,
+  processWebhookOrders,
 };
