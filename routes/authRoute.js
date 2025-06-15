@@ -9,7 +9,6 @@ const {
     unblockUser,
     handleRefreshToken,
     logoutUser,
-    updatePassword,
     forgotPasswordToken,
     resetPassword,
     loginAdmin,
@@ -29,11 +28,13 @@ const { authMiddleware, isAdmin } = require('../middlewares/authMiddleware');
 const router=express.Router();
 
 router.post("/register", createUser);
+// Sent link to reset password
 router.post("/forgot-password", forgotPasswordToken);
-router.put("/reset-password/:token", resetPassword);
+// Reset password using token
+router.patch("/reset-password/:token", resetPassword);
 
 
-router.put("/update-password", authMiddleware, updatePassword);
+
 
 router.post("/login", loginUserCtrl);
 router.post("/admin-login", loginAdmin);
@@ -46,8 +47,11 @@ router.get("/me", authMiddleware, getCurrentUser);
 router.patch("/update-me",authMiddleware,updateCurrentUser);
 router.get("/:id",authMiddleware,isAdmin,getaUser);
 router.delete("/:id",deleteUser);
+//Update user address
+router.patch("/update-address", updateUserAddress);
+//Change password
+router.patch("/change-password",authMiddleware,changePassword);
 
-router.put("/update-address", authMiddleware, updateUserAddress);
 router.put("/block-user/:id",authMiddleware,isAdmin,blockUser);
 router.put("/unblock-user/:id",authMiddleware,isAdmin,unblockUser);
 

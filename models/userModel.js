@@ -47,20 +47,13 @@ var userSchema = new mongoose.Schema(
       default: [],
     },
     address: [addressSchema],
-    address: {
-      address: {
-        type: String,
-      }, 
-      detail_address: {
-        type: String,
-      },
-    },
     gender: {
       type: String,
       default: "other",
     },
     avatar: {
       type: String,
+      default:null,
     },
     refreshToken: {
       type: String,
