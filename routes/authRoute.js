@@ -31,8 +31,9 @@ const router=express.Router();
 router.post("/register", createUser);
 router.post("/forgot-password", forgotPasswordToken);
 router.put("/reset-password/:token", resetPassword);
-router.get("/order", authMiddleware, getOrder);
-router.put("/password", authMiddleware, updatePassword);
+
+
+router.put("/update-password", authMiddleware, updatePassword);
 
 router.post("/login", loginUserCtrl);
 router.post("/admin-login", loginAdmin);
@@ -44,11 +45,7 @@ router.get("/me", authMiddleware, getCurrentUser);
 //Update current user
 router.patch("/update-me",authMiddleware,updateCurrentUser);
 router.get("/:id",authMiddleware,isAdmin,getaUser);
-router.delete("/:id",deleteUser); 
-
-
-
-
+router.delete("/:id",deleteUser);
 
 router.put("/update-address", authMiddleware, updateUserAddress);
 router.put("/block-user/:id",authMiddleware,isAdmin,blockUser);
