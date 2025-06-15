@@ -21,6 +21,9 @@ const {
     createAddress,
     getCurrentUser,
     updateCurrentUser,
+    createPayment,
+    webhookHandler,
+    processWebhookOrders,
 } = require('../controller/userCtrl');
 const { authMiddleware, isAdmin } = require('../middlewares/authMiddleware');
 const router=express.Router();
@@ -58,5 +61,10 @@ router.post("/cart/cash-order", authMiddleware, createOrder);
 router.put("/order/update-order/:id", authMiddleware, isAdmin, updateOrderStatus);
 router.put("/address", authMiddleware, createAddress);
 
+router.post('/payment/create', authMiddleware,createPayment);
+router.post('/webhook', webhookHandler); // For handling webhooks
+router.post('/process-orders', processWebhookOrders); // For processing webhook orders
+router.get("/order", authMiddleware, getOrder);
+router.put("/order/update-order/:id", authMiddleware, isAdmin, updateOrderStatus);
 
 module.exports=router;

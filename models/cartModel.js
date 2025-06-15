@@ -21,6 +21,11 @@ var cartSchema = new mongoose.Schema({
   },
   CartTotal: Number,
   totalAfterDiscount: Number,
+  orderCode: { 
+        type: Number,
+        unique: true,
+        sparse: true 
+    },
 }, {
   timestamps: true
 });
