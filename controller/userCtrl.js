@@ -287,7 +287,6 @@ const updateCurrentUser = asyncHandler(async (req, res) => {
   if (req.body.email) fieldsToUpdate.email = req.body.email;
   if (req.body.mobile) fieldsToUpdate.mobile = req.body.mobile;
   if (req.body.gender) fieldsToUpdate.gender = req.body.gender;
-  if (req.body.avatar) fieldsToUpdate.avatar = req.body.avatar;
   if (req.body.address) fieldsToUpdate.address = req.body.address;
 
   try {
