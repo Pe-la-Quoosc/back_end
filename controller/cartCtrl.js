@@ -115,7 +115,10 @@ const deleteCartItem = asyncHandler(async (req, res) => {
         item.product.toString() !== productId ||
         JSON.stringify(item.selectedAttributes) !== JSON.stringify(selectedAttributes)
     );
-
+    cart.CartTotal = cart.products.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
     await cart.save(); 
     res.json(cart); 
   } catch (error) {
@@ -133,6 +136,7 @@ const clearCart = asyncHandler(async (req, res) => {
     }
 
     cart.products = [];
+    cart.CartTotal = 0;
     await cart.save();
     res.json(cart);
   } catch (error) {
