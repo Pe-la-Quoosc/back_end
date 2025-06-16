@@ -5,7 +5,7 @@ const slugify = require("slugify");
 const qs = require("qs");
 // Create product
 const createProduct = asyncHandler(async (req, res) => {
-  const { title, description, price, category, variants, images } = req.body;
+  const { title, description, price, category, images, quantity, discountPercentage } = req.body;
 
   try {
     // Kiểm tra danh mục có tồn tại không
@@ -15,7 +15,6 @@ const createProduct = asyncHandler(async (req, res) => {
     }
 
      // Tính tổng quantity từ variants
-    const totalQuantity = variants.reduce((acc, variant) => acc + (variant.quantity || 0), 0);
 
     // Tạo slug từ tiêu đề sản phẩm
     const slug = slugify(title, { lower: true });
@@ -27,8 +26,8 @@ const createProduct = asyncHandler(async (req, res) => {
       description,
       price,
       category,
-      quantity: totalQuantity,
-      variants,
+      quantity: quantity || 0, // Sử dụng giá trị quantity từ body hoặc mặc định là 0
+      discountPercentage: discountPercentage || 0, // Sử dụng giá trị discountPercentage từ body hoặc mặc định là 0
       images,
     });
 
