@@ -23,6 +23,7 @@ const {
     createPayment,
     webhookHandler,
     processWebhookOrders,
+    changePassword,
 } = require('../controller/userCtrl');
 const { authMiddleware, isAdmin } = require('../middlewares/authMiddleware');
 const router=express.Router();
@@ -48,7 +49,7 @@ router.patch("/update-me",authMiddleware,updateCurrentUser);
 router.get("/:id",authMiddleware,isAdmin,getaUser);
 router.delete("/:id",deleteUser);
 //Update user address
-router.patch("/update-address", updateUserAddress);
+router.patch("/update-address",authMiddleware, updateUserAddress);
 //Change password
 router.patch("/change-password",authMiddleware,changePassword);
 

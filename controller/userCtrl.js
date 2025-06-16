@@ -169,6 +169,7 @@ const handleRefreshToken = asyncHandler(async (req, res) => {
 const updateUserAddress = asyncHandler(async (req, res) => {
   try {
     const userId = req.user._id;
+    // console.log("User ID:", req.user);
     const { fullname, phone, address } = req.body;
     const user = await User.findById(userId);
     if (!user) {
@@ -187,7 +188,10 @@ const updateUserAddress = asyncHandler(async (req, res) => {
     }
 
     const updatedUser = await user.save();
-    res.status(200).json(updatedUser);
+    res.status(200).json({
+      message: "User address updated successfully",
+      user: updatedUser,
+    });
   } catch (error) {
     console.error("Error updating user address:", error);
     res
